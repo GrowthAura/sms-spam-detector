@@ -64,6 +64,12 @@
   .note{background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:13.5px; color:#92400e; margin-top:18px}
   .recall-banner{background:linear-gradient(135deg,#fff1f3,#ffe4ea); border:1px solid #fecdd3; border-radius:12px; padding:14px 18px; font-size:14.5px; color:#9f1239; margin-bottom:20px}
   .recall-banner b{font-weight:800}
+
+  .spotlist{list-style:none; padding:0}
+  .spotlist li{cursor:pointer; padding:11px 12px; border-bottom:1px solid #f1e4e9; font-size:14px; display:flex; gap:12px; align-items:flex-start}
+  .spotlist li:last-child{border-bottom:none}
+  .spotlist li:hover{background:#fff1f3}
+  .spotlist .n{flex:0 0 26px; height:26px; border-radius:50%; background:var(--red); color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center}
 </style>
 </head>
 <body>
@@ -71,7 +77,7 @@
 <header>
   <div class="wrap">
     <strong>🛡️ Spam Detector ML</strong>
-    <nav><a href="#demo">Live demo</a><a href="#results">Results</a><a href="#how">How it works</a></nav>
+    <nav><a href="#demo">Live demo</a><a href="#spottests">Spot check</a><a href="#results">Results</a><a href="#how">How it works</a></nav>
   </div>
 </header>
 
@@ -108,6 +114,13 @@
     </div>
   </div>
   <div class="note">Demo runs 100% client-side. The page's JavaScript was verified to match the Python model exactly on real messages.</div>
+</section>
+
+
+<section id="spottests">
+  <h2>\u26a1 On-the-spot check</h2>
+  <p class="sub">20 real messages from the test set. Tap any one \u2014 it loads into the demo above and gets checked live, right in front of you.</p>
+  <div class="card"><ol id="spotlist" class="spotlist"></ol></div>
 </section>
 
 <section id="results">
@@ -225,6 +238,23 @@ document.querySelectorAll(".preset").forEach(b => b.onclick = () => {
   document.getElementById("msg").value = PRESETS[b.dataset.t];
   check();
 });
+
+
+const SPOT_TESTS = ["URGENT! Your Mobile number has been awarded with a £2000 prize GUARANTEED. Call 09061790126 from land line. Claim 3030. Valid 12hrs only 150ppm", "You have WON a guaranteed £1000 cash or a £2000 prize. To claim yr prize call our customer service representative on 08714712412 between 10am-7pm Cost 10p", "+123 Congratulations - in this week's competition draw u have won the £1450 prize to claim just call 09050002311 b4280703. T&Cs/stop SMS 08718727868. Over 18 only 150ppm", "SIX chances to win CASH! From 100 to 20,000 pounds txt> CSH11 and send to 87575. Cost 150p/day, 6days, 16+ TsandCs apply Reply HL 4 info", "This is the 2nd time we have tried 2 contact u. U have won the 750 Pound prize. 2 claim is easy, call 08712101358 NOW! Only 10p per min. BT-national-rate", "Dear Voucher Holder, 2 claim this weeks offer, at your PC go to http://www.e-tlp.co.uk/expressoffer Ts&Cs apply.2 stop texts txt STOP to 80062.", "U are subscribed to the best Mobile Content Service in the UK for £3 per 10 days until you send STOP to 82324. Helpline 08706091795", "Customer Loyalty Offer:The NEW Nokia6650 Mobile from ONLY £10 at TXTAUCTION! Txt word: START to No: 81151 & get yours Now! 4T&Ctxt TC 150p/MTmsg", "* FREE* POLYPHONIC RINGTONE Text SUPER to 87131 to get your FREE POLY TONE of the week now! 16 SN PoBox202 NR31 7ZS subscription 450pw", "Your account has been credited with 500 FREE Text Messages. To activate, just txt the word: CREDIT to No: 80488 T&Cs www.80488.biz", "I'm on da bus going home...", "Gud morning sir, tanx 4yestaday.I appreciate it sir. I tried calling u yesterday wen I got back in2 d school premise.pls sir I'll like 2 knw wen u r available.", "Good morning pookie pie! Lol hope I didn't wake u up", "Good night my dear.. Sleepwell&amp;Take care", "God bless.get good sleep my dear...i will pray!", "Hey i'm bored... So i'm thinking of u... So wat r u doing?", "Gud morng sir, am presently @hospital....I was called dat my sister was rushed down to hospital..... I tot I wud leave der early...I wil explain beta wen I cum", "I am nt coming, i wil be going 4 ncs meeting.", "Nope wif my sis lor... Aft bathing my dog then i can bathe... Looks like it's going 2 rain soon.", "Wow u slept just like that. Did care too know wah was d problem or was it cos I told u a lie? We are one rememba dt... Talk tomao gudnyt dear. Love u"];
+function esc(s){ const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+(function(){
+  const ol = document.getElementById("spotlist");
+  SPOT_TESTS.forEach((t, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = '<span class="n">' + (i+1) + '</span><span>' + esc(t.length > 110 ? t.slice(0,110) + "..." : t) + '</span>';
+    li.onclick = () => {
+      document.getElementById("msg").value = t;
+      check();
+      document.getElementById("demo").scrollIntoView({behavior:"smooth"});
+    };
+    ol.appendChild(li);
+  });
+})();
 
 fetch("model.json").then(r => r.json()).then(data => {
   M = data;
