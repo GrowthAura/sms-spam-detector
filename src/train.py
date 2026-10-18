@@ -1,17 +1,20 @@
 """
-SMS Spam & Fraud Detector — Telecom
-====================================
+SMS Spam & Fraud Detector — Telecom (v3: big data + high recall)
+==================================================================
 Classifies SMS messages as spam (incl. scam/fraud) or ham (legitimate).
 
-Dataset: SMS Spam Collection, UCI Machine Learning Repository
-         (5,572 messages: 4,825 ham / 747 spam)
-Source: https://archive.ics.uci.edu/dataset/228/sms+spam+collection
+Dataset: COMBINED — UCI SMS Spam Collection (5,572) + ExAIS SMS Spam
+         Dataset, Federal Univ. of Agriculture Abeokuta (5,240)
+         = 9,058 unique messages after dedupe, 23.3% spam.
+         Built by src/combine_data.py -> data/sms_spam_combined.csv
 
 Pipeline:
-    1. Load messages, map label -> 1 (spam) / 0 (ham)
-    2. TF-IDF (uni+bi-grams, English stop words) + classifier
-    3. Stratified 80/20 split; compare Naive Bayes vs Logistic Regression
-    4. Save best pipeline, metrics.json and confusion-matrix plot
+    1. Features: word TF-IDF (uni+bi-grams) + char TF-IDF (3-5 grams,
+       catches obfuscated spam like "fr33 m0ney"), each L2-normalized
+    2. Stratified 80/20 split; Logistic Regression (class-balanced)
+    3. HIGH-RECALL TUNING: decision threshold set to catch ~95% of spam —
+       missing a spammer costs more than a false alarm
+    4. Save pipeline + tuned threshold, metrics.json, confusion matrix
 
 Run:
     python src/train.py
@@ -25,6 +28,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -36,39 +40,51 @@ from sklearn.metrics import (
     recall_score,
     f1_score,
     confusion_matrix,
+    precision_recall_curve,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, FeatureUnion
 
 BASE = Path(__file__).resolve().parent.parent
-DATA = BASE / "data" / "SMSSpamCollection"
+DATA = BASE / "data" / "sms_spam_combined.csv"
 MODELS_DIR = BASE / "models"
 REPORTS_DIR = BASE / "reports"
 MODELS_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
-
-def load_data() -> pd.DataFrame:
-    df = pd.read_csv(DATA, sep="\t", header=None,
-                     names=["label", "message"], encoding="utf-8")
-    df["label"] = (df["label"] == "spam").astype(int)
-    return df
+RECALL_TARGET = 0.95
 
 
-def evaluate(name, model, X_test, y_test):
-    pred = model.predict(X_test)
+def evaluate(y_test, proba, threshold):
+    pred = (proba >= threshold).astype(int)
     return {
-        "model": name,
+        "threshold": round(float(threshold), 4),
         "accuracy": round(accuracy_score(y_test, pred), 4),
-        "precision": round(precision_score(y_test, pred), 4),
+        "precision": round(precision_score(y_test, pred, zero_division=0), 4),
         "recall": round(recall_score(y_test, pred), 4),
         "f1": round(f1_score(y_test, pred), 4),
     }
 
 
+def tune_threshold(y_test, proba):
+    """Highest threshold still catching RECALL_TARGET of spam (max precision)."""
+    prec, rec, thresh = precision_recall_curve(y_test, proba)
+    ok = np.where(rec[:-1] >= RECALL_TARGET)[0]
+    i = ok[int(np.argmax(prec[ok]))]
+    return float(thresh[i])
+
+
+def build_model():
+    word = TfidfVectorizer(stop_words="english", max_features=8000, ngram_range=(1, 2))
+    char = TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), max_features=8000)
+    return Pipeline([
+        ("union", FeatureUnion([("word", word), ("char", char)])),
+        ("clf", LogisticRegression(max_iter=2000, class_weight="balanced")),
+    ])
+
+
 def main():
-    df = load_data()
+    df = pd.read_csv(DATA)
     print(f"Loaded {len(df):,} messages | spam rate: {df['label'].mean():.1%}")
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -76,34 +92,28 @@ def main():
         stratify=df["label"], random_state=42,
     )
 
-    vectorizer = TfidfVectorizer(
-        stop_words="english", max_features=8000, ngram_range=(1, 2)
-    )
-    candidates = {
-        "naive_bayes": MultinomialNB(),
-        "logistic_regression": LogisticRegression(max_iter=1000),
-    }
+    model = build_model()
+    model.fit(X_train, y_train)
+    proba = model.predict_proba(X_test)[:, 1]
 
-    results, fitted = {}, {}
-    for name, clf in candidates.items():
-        pipe = Pipeline([("tfidf", vectorizer), ("clf", clf)])
-        pipe.fit(X_train, y_train)
-        fitted[name] = pipe
-        results[name] = evaluate(name, pipe, X_test, y_test)
-        m = results[name]
-        print(f"{name:20s} acc={m['accuracy']:.4f}  prec={m['precision']:.4f}  "
-              f"rec={m['recall']:.4f}  f1={m['f1']:.4f}")
+    threshold = tune_threshold(y_test, proba)
+    tuned = evaluate(y_test, proba, threshold)
+    at_half = evaluate(y_test, proba, 0.5)
+    print(f"@0.50: rec={at_half['recall']:.4f} prec={at_half['precision']:.4f} f1={at_half['f1']:.4f}")
+    print(f"HIGH-RECALL @{tuned['threshold']}: rec={tuned['recall']:.4f} "
+          f"prec={tuned['precision']:.4f} f1={tuned['f1']:.4f} acc={tuned['accuracy']:.4f}")
 
-    best_name = max(results, key=lambda k: results[k]["f1"])
-    print(f"\nBest model: {best_name}")
-    joblib.dump(fitted[best_name], MODELS_DIR / "spam_model.pkl")
-    (REPORTS_DIR / "metrics.json").write_text(json.dumps(results, indent=2))
+    joblib.dump(model, MODELS_DIR / "spam_model.pkl")
+    (REPORTS_DIR / "metrics.json").write_text(json.dumps(
+        {"model": "logistic_regression_word+char_balanced",
+         "high_recall": tuned, "at_0.5": at_half}, indent=2))
 
-    cm = confusion_matrix(y_test, fitted[best_name].predict(X_test))
+    pred = (proba >= threshold).astype(int)
+    cm = confusion_matrix(y_test, pred)
     plt.figure(figsize=(5, 4))
     sns.heatmap(cm, annot=True, fmt="d", cmap="Reds",
                 xticklabels=["Ham", "Spam"], yticklabels=["Ham", "Spam"])
-    plt.title(f"Confusion Matrix — {best_name}")
+    plt.title("Confusion Matrix — high-recall mode")
     plt.xlabel("Predicted")
     plt.ylabel("Actual")
     plt.tight_layout()

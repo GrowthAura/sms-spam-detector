@@ -1,16 +1,17 @@
 {
-  "naive_bayes": {
-    "model": "naive_bayes",
-    "accuracy": 0.9695,
-    "precision": 1.0,
-    "recall": 0.7718,
-    "f1": 0.8712
+  "model": "logistic_regression_word+char_balanced",
+  "high_recall": {
+    "threshold": 0.3788,
+    "accuracy": 0.9106,
+    "precision": 0.7394,
+    "recall": 0.9527,
+    "f1": 0.8326
   },
-  "logistic_regression": {
-    "model": "logistic_regression",
-    "accuracy": 0.9677,
-    "precision": 1.0,
-    "recall": 0.7584,
-    "f1": 0.8626
+  "at_0.5": {
+    "threshold": 0.5,
+    "accuracy": 0.9205,
+    "precision": 0.7962,
+    "recall": 0.8865,
+    "f1": 0.8389
   }
 }

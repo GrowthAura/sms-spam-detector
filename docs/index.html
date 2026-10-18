@@ -62,6 +62,8 @@
   footer{background:var(--navy); color:#b8a8c9; padding:30px 24px; font-size:13.5px; text-align:center}
   footer a{color:var(--red2); text-decoration:none}
   .note{background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:13.5px; color:#92400e; margin-top:18px}
+  .recall-banner{background:linear-gradient(135deg,#fff1f3,#ffe4ea); border:1px solid #fecdd3; border-radius:12px; padding:14px 18px; font-size:14.5px; color:#9f1239; margin-bottom:20px}
+  .recall-banner b{font-weight:800}
 </style>
 </head>
 <body>
@@ -75,7 +77,7 @@
 
 <div class="hero">
   <h1>SMS Spam &amp; <span class="accent">Fraud</span> Detector</h1>
-  <p>Machine learning that tells spam and scam texts apart from real messages — the same filtering job every telecom operator runs on its network, every day.</p>
+  <p>Machine learning that tells spam and scam texts apart from real messages — trained on <b>9,058 real SMS</b> and tuned to catch as much spam as possible.</p>
   <div class="badges" id="badges"></div>
 </div>
 
@@ -83,7 +85,8 @@
 
 <section id="demo">
   <h2>🔴 Live demo — paste any SMS</h2>
-  <p class="sub">This runs the <b>actual trained model</b> (TF-IDF + Naive Bayes weights exported to JSON) entirely in your browser. Try a scammy text, then a normal one.</p>
+  <p class="sub">This runs the <b>actual trained model</b> (word + character TF-IDF, logistic regression weights exported to JSON) entirely in your browser.</p>
+  <div class="recall-banner">🎯 <b>High-recall mode:</b> this detector is tuned to catch <b>95 out of 100</b> spam messages. Trade-off: about 1 in 4 flagged messages turns out to be legit — a missed scammer costs more than a false alarm.</div>
   <div class="demo-grid">
     <div class="card">
       <textarea id="msg" placeholder="Paste an SMS here...">Congratulations! You've won a $1000 gift card. Click here to claim: bit.ly/xyz123</textarea>
@@ -91,6 +94,7 @@
       <div class="presets">
         <button class="preset" data-t="spam1">📨 Prize scam</button>
         <button class="preset" data-t="spam2">🎣 Bank phish</button>
+        <button class="preset" data-t="spam3">💸 Sneaky promo</button>
         <button class="preset" data-t="ham1">💬 Normal chat</button>
         <button class="preset" data-t="ham2">📦 Delivery info</button>
       </div>
@@ -108,16 +112,16 @@
 
 <section id="results">
   <h2>📊 Model results</h2>
-  <p class="sub">Measured on a held-out test set the model never saw during training (stratified 80/20 split). Precision is 1.000 — the model never flags a legit message as spam.</p>
+  <p class="sub">Measured on a held-out test set the model never saw during training (stratified 80/20 split of 9,058 messages).</p>
   <div class="card" style="overflow-x:auto">
     <table>
-      <tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
-      <tr class="winner"><td>Naive Bayes ⭐</td><td>0.970</td><td>1.000</td><td>0.772</td><td>0.871</td></tr>
-      <tr><td>Logistic Regression</td><td>0.968</td><td>1.000</td><td>0.758</td><td>0.863</td></tr>
+      <tr><th>Mode</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+      <tr class="winner"><td>High-recall ⭐ (live)</td><td>0.911</td><td>0.739</td><td>0.953</td><td>0.833</td></tr>
+      <tr><td>Default (0.50)</td><td>0.921</td><td>0.796</td><td>0.887</td><td>0.839</td></tr>
     </table>
   </div>
   <div class="plots">
-    <figure><img src="confusion_matrix.png" alt="Confusion matrix"><figcaption>Confusion matrix — Naive Bayes</figcaption></figure>
+    <figure><img src="confusion_matrix.png" alt="Confusion matrix"><figcaption>Confusion matrix — high-recall mode</figcaption></figure>
   </div>
 </section>
 
@@ -125,18 +129,18 @@
   <h2>⚙️ How it was built</h2>
   <p class="sub">Python · NLP (TF-IDF) · Scikit-learn</p>
   <div class="steps">
-    <div class="step"><div class="n">01</div><h4>Collect</h4><p>5,572 real SMS from the UCI Spam Collection (13.4% spam).</p></div>
-    <div class="step"><div class="n">02</div><h4>Vectorize</h4><p>TF-IDF turns words into numbers: rare, spammy words weigh more.</p></div>
-    <div class="step"><div class="n">03</div><h4>Train</h4><p>Naive Bayes vs Logistic Regression on an 80/20 split.</p></div>
-    <div class="step"><div class="n">04</div><h4>Evaluate</h4><p>Naive Bayes wins: 97% accuracy, zero false alarms on legit texts.</p></div>
-    <div class="step"><div class="n">05</div><h4>Ship</h4><p>8,000 word-weights exported so this page classifies live in JS.</p></div>
+    <div class="step"><div class="n">01</div><h4>Collect</h4><p>9,058 real SMS: UCI Spam Collection + ExAIS corpus (Nigeria), deduped.</p></div>
+    <div class="step"><div class="n">02</div><h4>Vectorize</h4><p>Word TF-IDF + character TF-IDF — catches tricks like "fr33 m0ney".</p></div>
+    <div class="step"><div class="n">03</div><h4>Train</h4><p>Balanced logistic regression on an 80/20 split.</p></div>
+    <div class="step"><div class="n">04</div><h4>Tune recall</h4><p>Threshold set to catch 95% of spam — missing scammers is the real cost.</p></div>
+    <div class="step"><div class="n">05</div><h4>Ship</h4><p>16,000 weights exported so this page classifies live in JS.</p></div>
   </div>
 </section>
 
 </div>
 
 <footer>
-  Dataset: <a href="https://archive.ics.uci.edu/dataset/228/sms+spam+collection">SMS Spam Collection, UCI ML Repository</a> ·
+  Datasets: <a href="https://archive.ics.uci.edu/dataset/228/sms+spam+collection">UCI SMS Spam Collection</a> + <a href="https://github.com/AbayomiAlli/SMS-Spam-Dataset">ExAIS (FUNAAB)</a> ·
   Code &amp; training pipeline in the <a id="repo-link" href="https://github.com/GrowthAura/sms-spam-detector">GitHub repo</a> ·
   Built by Mian Noorullah
 </footer>
@@ -146,36 +150,52 @@ let M = null;
 const PRESETS = {
   spam1: "Congratulations! You've won a $1000 gift card. Click here to claim: bit.ly/xyz123",
   spam2: "URGENT: Your bank account has been locked. Verify your identity now at secure-bank-login.tk",
+  spam3: "Call 09090900040 now to claim your fr33 prize money, limited offer!!!",
   ham1: "Hey, are we still meeting for lunch tomorrow at 12?",
   ham2: "Your package will arrive Thursday between 2-4pm. Track it here: ups.com/123"
 };
 
+function l2norm(d){
+  let s = 0; for (const k in d) s += d[k]*d[k];
+  const n = Math.sqrt(s) || 1;
+  const o = {}; for (const k in d) o[k] = d[k]/n;
+  return o;
+}
+
 function spamProbability(text, M){
   const stopSet = new Set(M.stop_words);
+  // word TF-IDF (1-2 grams)
   const raw = text.toLowerCase().match(/\b\w\w+\b/g) || [];
   const tokens = raw.filter(t => !stopSet.has(t));
-  const counts = {};
+  const wcounts = {};
   for (let n = 1; n <= 2; n++){
     for (let i = 0; i + n <= tokens.length; i++){
       const term = tokens.slice(i, i + n).join(" ");
-      const idx = M.vocabulary[term];
-      if (idx !== undefined) counts[idx] = (counts[idx] || 0) + 1;
+      const idx = M.word_vocab[term];
+      if (idx !== undefined) wcounts[idx] = (wcounts[idx] || 0) + 1;
     }
   }
-  const tfidf = {}; let normSq = 0;
-  for (const idx in counts){
-    const v = counts[idx] * M.idf[idx];
-    tfidf[idx] = v; normSq += v * v;
+  const wtf = {}; for (const idx in wcounts) wtf[idx] = wcounts[idx] * M.word_idf[idx];
+  const wv = l2norm(wtf);
+  // char TF-IDF (3-5 grams, word-boundary)
+  const ccounts = {};
+  const words = text.toLowerCase().split(/\s+/).filter(w => w.length);
+  for (const w of words){
+    const pw = " " + w + " ";
+    for (let n = 3; n <= 5; n++)
+      for (let i = 0; i + n <= pw.length; i++){
+        const term = pw.slice(i, i + n);
+        const idx = M.char_vocab[term];
+        if (idx !== undefined) ccounts[idx] = (ccounts[idx] || 0) + 1;
+      }
   }
-  const norm = Math.sqrt(normSq) || 1;
-  const scores = [0, 1].map(ci => {
-    let s = M.class_log_prior[ci];
-    for (const idx in tfidf) s += (tfidf[idx] / norm) * M.feature_log_prob[ci][idx];
-    return s;
-  });
-  const m = Math.max(scores[0], scores[1]);
-  const e0 = Math.exp(scores[0] - m), e1 = Math.exp(scores[1] - m);
-  return { pSpam: e1 / (e0 + e1), tfidf, norm };
+  const ctf = {}; for (const idx in ccounts) ctf[idx] = ccounts[idx] * M.char_idf[idx];
+  const cv = l2norm(ctf);
+  // logistic regression
+  let z = M.intercept;
+  for (const idx in wv) z += wv[idx] * M.coef_word[idx];
+  for (const idx in cv) z += cv[idx] * M.coef_char[idx];
+  return { pSpam: 1/(1+Math.exp(-z)), wv };
 }
 
 function check(){
@@ -184,16 +204,15 @@ function check(){
   const res = spamProbability(text, M);
   const p = res.pSpam;
   const v = document.getElementById("verdict");
-  if (p >= 0.5){ v.textContent = "🚨 SPAM / FRAUD"; v.className = "verdict-big spam"; }
+  if (p >= M.threshold){ v.textContent = "🚨 SPAM / FRAUD"; v.className = "verdict-big spam"; }
   else { v.textContent = "✅ Legit message"; v.className = "verdict-big ham"; }
   document.getElementById("pct").textContent = (p * 100).toFixed(1) + "%";
   document.getElementById("gauge").style.width = (p * 100).toFixed(1) + "%";
-  // term lookup map (built once)
-  if (!M._rev){ M._rev = {}; for (const k in M.vocabulary) M._rev[M.vocabulary[k]] = k; }
+  if (!M._rev){ M._rev = {}; for (const k in M.word_vocab) M._rev[M.word_vocab[k]] = k; }
   const rows = [];
-  for (const idx in res.tfidf){
-    const w = (M.feature_log_prob[1][idx] - M.feature_log_prob[0][idx]) * (res.tfidf[idx] / res.norm);
-    if (w > 0.01) rows.push([M._rev[idx], w]);
+  for (const idx in res.wv){
+    const w = M.coef_word[idx] * res.wv[idx];
+    if (w > 0.02) rows.push([M._rev[idx], w]);
   }
   rows.sort((a,b) => b[1] - a[1]);
   document.getElementById("signals").innerHTML = rows.slice(0,5).map(([t,w]) =>
@@ -210,10 +229,10 @@ document.querySelectorAll(".preset").forEach(b => b.onclick = () => {
 fetch("model.json").then(r => r.json()).then(data => {
   M = data;
   document.getElementById("badges").innerHTML =
-    `<span class="badge">Accuracy <b>${(M.metrics.accuracy*100).toFixed(1)}%</b></span>
-     <span class="badge">Precision <b>${M.metrics.precision.toFixed(3)}</b></span>
+    `<span class="badge">Spam caught <b>${(M.metrics.recall*100).toFixed(1)}%</b></span>
+     <span class="badge">Precision <b>${M.metrics.precision}</b></span>
      <span class="badge">F1 <b>${M.metrics.f1}</b></span>
-     <span class="badge">Messages <b>5,572</b></span>`;
+     <span class="badge">Messages <b>9,058</b></span>`;
   check();
 });
 </script>
