@@ -1,0 +1,16 @@
+{
+  "naive_bayes": {
+    "model": "naive_bayes",
+    "accuracy": 0.9695,
+    "precision": 1.0,
+    "recall": 0.7718,
+    "f1": 0.8712
+  },
+  "logistic_regression": {
+    "model": "logistic_regression",
+    "accuracy": 0.9677,
+    "precision": 1.0,
+    "recall": 0.7584,
+    "f1": 0.8626
+  }
+}

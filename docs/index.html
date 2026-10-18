@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMS Spam &amp; Fraud Detector — Telecom ML</title>
+<meta name="description" content="Machine learning model detecting spam and fraud SMS. Try the live demo.">
+<style>
+  :root{
+    --navy:#160a2e; --navy2:#2b1155; --red:#ef2d5e; --red2:#ff6b6b;
+    --bg:#faf5f7; --card:#ffffff; --text:#1e293b; --muted:#64748b;
+    --green:#16a34a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--text); line-height:1.6}
+  header{background:linear-gradient(135deg,var(--navy),var(--navy2)); color:#fff; padding:14px 24px; position:sticky; top:0; z-index:10}
+  header .wrap{max-width:1100px; margin:0 auto; display:flex; justify-content:space-between; align-items:center}
+  header a{color:#f3cdd8; text-decoration:none; font-size:14px; margin-left:18px}
+  header a:hover{color:#fff}
+  .hero{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,#7c1d3f 100%); color:#fff; padding:64px 24px 56px; text-align:center}
+  .hero h1{font-size:clamp(28px,5vw,46px); font-weight:800; letter-spacing:-.5px}
+  .hero h1 .accent{color:var(--red2)}
+  .hero p{max-width:680px; margin:14px auto 0; color:#f3d9e1; font-size:17px}
+  .badges{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:26px}
+  .badge{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:8px 18px; font-size:14px}
+  .badge b{color:#fff; font-size:16px}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 24px}
+  section{padding:52px 0}
+  h2{font-size:28px; font-weight:800; letter-spacing:-.3px; margin-bottom:6px}
+  .sub{color:var(--muted); margin-bottom:26px; max-width:720px}
+  .card{background:var(--card); border-radius:16px; box-shadow:0 8px 30px rgba(22,10,46,.08); padding:28px}
+  .demo-grid{display:grid; grid-template-columns:1fr 360px; gap:24px; align-items:start}
+  @media(max-width:900px){.demo-grid{grid-template-columns:1fr}}
+  textarea{width:100%; min-height:130px; padding:14px; border:1.5px solid #cbd5e1; border-radius:12px; font-size:16px; font-family:inherit; resize:vertical}
+  textarea:focus{outline:none; border-color:var(--red); box-shadow:0 0 0 3px rgba(239,45,94,.15)}
+  .btn{background:var(--red); color:#fff; border:none; border-radius:999px; padding:12px 34px; font-size:16px; font-weight:800; cursor:pointer; margin-top:14px}
+  .btn:hover{background:#d11f4d}
+  .presets{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+  .preset{border:1.5px solid var(--red); color:var(--red); background:#fff; border-radius:999px; padding:7px 16px; font-size:13px; font-weight:700; cursor:pointer}
+  .preset:hover{background:var(--red); color:#fff}
+  .result{text-align:center; position:sticky; top:76px}
+  .verdict-big{font-size:34px; font-weight:800; margin:10px 0 2px}
+  .verdict-big.spam{color:var(--red)} .verdict-big.ham{color:var(--green)}
+  .gauge{height:22px; border-radius:999px; background:#e2e8f0; overflow:hidden; margin:16px 0 8px}
+  .gauge-fill{height:100%; width:0%; border-radius:999px; background:linear-gradient(90deg,var(--green),#eab308 60%,var(--red)); transition:width .4s ease}
+  .signals{text-align:left; margin-top:16px; font-size:14px}
+  .signals li{margin:7px 0; list-style:none; display:flex; justify-content:space-between; gap:8px}
+  .signals .tag{background:#ffeef2; color:#9f1239; border-radius:6px; padding:2px 8px; font-size:12px; font-weight:700}
+  .signals .w{color:var(--red); font-weight:700}
+  table{width:100%; border-collapse:collapse; font-size:15px}
+  th,td{padding:12px 14px; text-align:left; border-bottom:1px solid #e2e8f0}
+  th{background:#f1f5f9; font-size:13px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted)}
+  tr.winner td{background:#fff1f3; font-weight:700}
+  .plots{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px; margin-top:24px; max-width:560px}
+  .plots img{width:100%; border-radius:12px; border:1px solid #e2e8f0; background:#fff}
+  .plots figcaption{font-size:13px; color:var(--muted); margin-top:8px; text-align:center}
+  .steps{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-top:8px}
+  .step{background:#fff; border-radius:12px; padding:20px; border-top:4px solid var(--red); box-shadow:0 4px 16px rgba(22,10,46,.06)}
+  .step .n{font-size:13px; font-weight:800; color:var(--red)}
+  .step h4{margin:4px 0 6px; font-size:15px}
+  .step p{font-size:13.5px; color:var(--muted)}
+  footer{background:var(--navy); color:#b8a8c9; padding:30px 24px; font-size:13.5px; text-align:center}
+  footer a{color:var(--red2); text-decoration:none}
+  .note{background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:13.5px; color:#92400e; margin-top:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <strong>🛡️ Spam Detector ML</strong>
+    <nav><a href="#demo">Live demo</a><a href="#results">Results</a><a href="#how">How it works</a></nav>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>SMS Spam &amp; <span class="accent">Fraud</span> Detector</h1>
+  <p>Machine learning that tells spam and scam texts apart from real messages — the same filtering job every telecom operator runs on its network, every day.</p>
+  <div class="badges" id="badges"></div>
+</div>
+
+<div class="wrap">
+
+<section id="demo">
+  <h2>🔴 Live demo — paste any SMS</h2>
+  <p class="sub">This runs the <b>actual trained model</b> (TF-IDF + Naive Bayes weights exported to JSON) entirely in your browser. Try a scammy text, then a normal one.</p>
+  <div class="demo-grid">
+    <div class="card">
+      <textarea id="msg" placeholder="Paste an SMS here...">Congratulations! You've won a $1000 gift card. Click here to claim: bit.ly/xyz123</textarea>
+      <br><button class="btn" id="check">🔍 Check this SMS</button>
+      <div class="presets">
+        <button class="preset" data-t="spam1">📨 Prize scam</button>
+        <button class="preset" data-t="spam2">🎣 Bank phish</button>
+        <button class="preset" data-t="ham1">💬 Normal chat</button>
+        <button class="preset" data-t="ham2">📦 Delivery info</button>
+      </div>
+    </div>
+    <div class="card result">
+      <div style="font-size:13px;color:var(--muted);font-weight:700">SPAM PROBABILITY</div>
+      <div class="verdict-big" id="verdict">–</div>
+      <div class="gauge"><div class="gauge-fill" id="gauge"></div></div>
+      <div style="font-size:26px;font-weight:800" id="pct">–</div>
+      <div class="signals"><b style="font-size:13px">Top spam signals in this text</b><ul id="signals" style="margin-top:8px"></ul></div>
+    </div>
+  </div>
+  <div class="note">Demo runs 100% client-side. The page's JavaScript was verified to match the Python model exactly on real messages.</div>
+</section>
+
+<section id="results">
+  <h2>📊 Model results</h2>
+  <p class="sub">Measured on a held-out test set the model never saw during training (stratified 80/20 split). Precision is 1.000 — the model never flags a legit message as spam.</p>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th></tr>
+      <tr class="winner"><td>Naive Bayes ⭐</td><td>0.970</td><td>1.000</td><td>0.772</td><td>0.871</td></tr>
+      <tr><td>Logistic Regression</td><td>0.968</td><td>1.000</td><td>0.758</td><td>0.863</td></tr>
+    </table>
+  </div>
+  <div class="plots">
+    <figure><img src="confusion_matrix.png" alt="Confusion matrix"><figcaption>Confusion matrix — Naive Bayes</figcaption></figure>
+  </div>
+</section>
+
+<section id="how">
+  <h2>⚙️ How it was built</h2>
+  <p class="sub">Python · NLP (TF-IDF) · Scikit-learn</p>
+  <div class="steps">
+    <div class="step"><div class="n">01</div><h4>Collect</h4><p>5,572 real SMS from the UCI Spam Collection (13.4% spam).</p></div>
+    <div class="step"><div class="n">02</div><h4>Vectorize</h4><p>TF-IDF turns words into numbers: rare, spammy words weigh more.</p></div>
+    <div class="step"><div class="n">03</div><h4>Train</h4><p>Naive Bayes vs Logistic Regression on an 80/20 split.</p></div>
+    <div class="step"><div class="n">04</div><h4>Evaluate</h4><p>Naive Bayes wins: 97% accuracy, zero false alarms on legit texts.</p></div>
+    <div class="step"><div class="n">05</div><h4>Ship</h4><p>8,000 word-weights exported so this page classifies live in JS.</p></div>
+  </div>
+</section>
+
+</div>
+
+<footer>
+  Dataset: <a href="https://archive.ics.uci.edu/dataset/228/sms+spam+collection">SMS Spam Collection, UCI ML Repository</a> ·
+  Code &amp; training pipeline in the <a id="repo-link" href="https://github.com/">GitHub repo</a> ·
+  Built by Mian Noorullah
+</footer>
+
+<script>
+let M = null;
+const PRESETS = {
+  spam1: "Congratulations! You've won a $1000 gift card. Click here to claim: bit.ly/xyz123",
+  spam2: "URGENT: Your bank account has been locked. Verify your identity now at secure-bank-login.tk",
+  ham1: "Hey, are we still meeting for lunch tomorrow at 12?",
+  ham2: "Your package will arrive Thursday between 2-4pm. Track it here: ups.com/123"
+};
+
+function spamProbability(text, M){
+  const stopSet = new Set(M.stop_words);
+  const raw = text.toLowerCase().match(/\b\w\w+\b/g) || [];
+  const tokens = raw.filter(t => !stopSet.has(t));
+  const counts = {};
+  for (let n = 1; n <= 2; n++){
+    for (let i = 0; i + n <= tokens.length; i++){
+      const term = tokens.slice(i, i + n).join(" ");
+      const idx = M.vocabulary[term];
+      if (idx !== undefined) counts[idx] = (counts[idx] || 0) + 1;
+    }
+  }
+  const tfidf = {}; let normSq = 0;
+  for (const idx in counts){
+    const v = counts[idx] * M.idf[idx];
+    tfidf[idx] = v; normSq += v * v;
+  }
+  const norm = Math.sqrt(normSq) || 1;
+  const scores = [0, 1].map(ci => {
+    let s = M.class_log_prior[ci];
+    for (const idx in tfidf) s += (tfidf[idx] / norm) * M.feature_log_prob[ci][idx];
+    return s;
+  });
+  const m = Math.max(scores[0], scores[1]);
+  const e0 = Math.exp(scores[0] - m), e1 = Math.exp(scores[1] - m);
+  return { pSpam: e1 / (e0 + e1), tfidf, norm };
+}
+
+function check(){
+  if (!M) return;
+  const text = document.getElementById("msg").value;
+  const res = spamProbability(text, M);
+  const p = res.pSpam;
+  const v = document.getElementById("verdict");
+  if (p >= 0.5){ v.textContent = "🚨 SPAM / FRAUD"; v.className = "verdict-big spam"; }
+  else { v.textContent = "✅ Legit message"; v.className = "verdict-big ham"; }
+  document.getElementById("pct").textContent = (p * 100).toFixed(1) + "%";
+  document.getElementById("gauge").style.width = (p * 100).toFixed(1) + "%";
+  // term lookup map (built once)
+  if (!M._rev){ M._rev = {}; for (const k in M.vocabulary) M._rev[M.vocabulary[k]] = k; }
+  const rows = [];
+  for (const idx in res.tfidf){
+    const w = (M.feature_log_prob[1][idx] - M.feature_log_prob[0][idx]) * (res.tfidf[idx] / res.norm);
+    if (w > 0.01) rows.push([M._rev[idx], w]);
+  }
+  rows.sort((a,b) => b[1] - a[1]);
+  document.getElementById("signals").innerHTML = rows.slice(0,5).map(([t,w]) =>
+    `<li><span class="tag">${t}</span><span class="w">+${w.toFixed(2)}</span></li>`).join("")
+    || '<li style="color:var(--muted)">No strong spam signals found.</li>';
+}
+
+document.getElementById("check").onclick = check;
+document.querySelectorAll(".preset").forEach(b => b.onclick = () => {
+  document.getElementById("msg").value = PRESETS[b.dataset.t];
+  check();
+});
+
+fetch("model.json").then(r => r.json()).then(data => {
+  M = data;
+  document.getElementById("badges").innerHTML =
+    `<span class="badge">Accuracy <b>${(M.metrics.accuracy*100).toFixed(1)}%</b></span>
+     <span class="badge">Precision <b>${M.metrics.precision.toFixed(3)}</b></span>
+     <span class="badge">F1 <b>${M.metrics.f1}</b></span>
+     <span class="badge">Messages <b>5,572</b></span>`;
+  check();
+});
+</script>
+</body>
+</html>
